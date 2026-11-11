@@ -2,6 +2,11 @@
 <html lang="it">
 <head>
   <meta charset="UTF-8">
+  <!-- Meta tag PWA ed icone -->
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#1E88E5">
+  <link rel="apple-touch-icon" href="icon-192.png">
+  
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Assistente Vocale Arpa Celtica</title>
   <style>
@@ -22,6 +27,7 @@
     #status { margin-top: 15px; font-size: 1.5rem; text-align: center; color: #FFD54F; }
   </style>
 </head>
+  
 <body>
 
   <button id="mic-button" aria-label="Tocca un punto qualsiasi o premi Spazio per pronunciare la tonalità dell'arpa">
@@ -229,6 +235,20 @@
       });
     } else {
       speak('Il browser non supporta il riconoscimento vocale diretto.');
+    }
+  </script>
+  <script>
+    // Registrazione Service Worker per supporto Offline/PWA
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./sw.js')
+          .then((reg) => {
+            console.log('Service Worker registrato con successo:', reg.scope);
+          })
+          .catch((err) => {
+            console.error('Errore registrazione Service Worker:', err);
+          });
+      });
     }
   </script>
 </body>
