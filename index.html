@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Assistente Vocale Arpa Celtica</title>
+  <style>
+    * { box-sizing: border-box; }
+    body, html {
+      margin: 0; padding: 0; height: 100%; width: 100%;
+      font-family: system-ui, -apple-system, sans-serif;
+      background-color: #121212; color: #FFFFFF;
+      display: flex; flex-direction: column; justify-content: center; align-items: center;
+    }
+    #mic-button {
+      width: 90%; height: 80vh; background-color: #1E88E5; border: 4px solid #FFFFFF;
+      border-radius: 20px; font-size: 2.2rem; font-weight: bold; color: #FFFFFF;
+      cursor: pointer; display: flex; flex-direction: column; justify-content: center;
+      align-items: center; text-align: center; padding: 20px;
+    }
+    #mic-button:focus, #mic-button:hover { background-color: #1565C0; outline: 4px solid #FFD54F; }
+    #status { margin-top: 15px; font-size: 1.5rem; text-align: center; color: #FFD54F; }
+  </style>
+</head>
+<body>
+
+  <button id="mic-button" aria-label="Tocca un punto qualsiasi o premi Spazio per pronunciare la tonalità dell'arpa">
+    Tocca lo schermo o premi SPAZIO<br><br>per parlare
+  </button>
+  
+  <div id="status" aria-live="assertive" role="alert">Pronto. Tocca per ascoltare.</div>
+
+  <script>
+    const tonalityRules = [
+      // MINORI
+      {
+        keys: ['do minore'],
+        speech: 'Do minore. Tutte le levette abbassate.'
+      },
+      {
+        keys: ['sol minore'],
+        speech: 'Sol minore. Alza: La. Le altre giù.'
+      },
+      {
+        keys: ['re minore'],
+        speech: 'Re minore. Alza: Mi; La. Le altre giù.'
+      },
+      {
+        keys: ['la minore'],
+        speech: 'La minore. Alza: Mi; La; Si. Le altre giù.'
+      },
+      {
+        keys: ['mi minore'],
+        speech: 'Mi minore. Alza: Mi; Fa; La; Si. Le altre giù.'
+      },
+      {
+        keys: ['si minore'],
+        speech: 'Si minore. Alza: Do; Mi; Fa; La; Si. Lascia giù: Re; Sol.'
+      },
+      {
+        keys: ['fa diesis minore', 'fa # minore'],
+        speech: 'Fa diesis minore. Alza: Do; Mi; Fa; Sol; La; Si. Lascia giù: Re.'
+      },
+      {
+        keys: ['do diesis minore', 'do # minore'],
+        speech: 'Do diesis minore. Tutte le levette alzate.'
+      },
+
+      // MAGGIORI
+      {
+        keys: ['mi bemolle'],
+        speech: 'Mi bemolle maggiore. Tutte le levette abbassate.'
+      },
+      {
+        keys: ['si bemolle'],
+        speech: 'Si bemolle maggiore. Alza: La. Le altre giù.'
+      },
+      {
+        keys: ['fa maggiore', 'fa'],
+        speech: 'Fa maggiore. Alza: Mi; La. Le altre giù.'
+      },
+      {
+        keys: ['do maggiore', 'do'],
+        speech: 'Do maggiore. Alza: Mi; La; Si. Le altre giù.'
+      },
+      {
+        keys: ['sol maggiore', 'sol'],
+        speech: 'Sol maggiore. Alza: Mi; Fa; La; Si. Le altre giù.'
+      },
+      {
+        keys: ['re maggiore', 're'],
+        speech: 'Re maggiore. Alza: Do; Mi; Fa; La; Si. Lascia giù: Re; Sol.'
+      },
+      {
+        keys: ['la maggiore', 'la'],
+        speech: 'La maggiore. Alza: Do; Mi; Fa; Sol; La; Si. Lascia giù: Re.'
+      },
+      {
+        keys: ['mi maggiore', 'mi'],
+        speech: 'Mi maggiore. Tutte le levette alzate.'
+      }
+    ];
+
+    const micBtn = document.getElementById('mic-button');
+    const statusDiv = document.getElementById('status');
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+
+    let selectedVoice = null;
+    let recognition = null;
+    let isListening = false;
+    let hasResponded = false;
+
+    function loadVoices() {
+      const voices = window.speechSynthesis.getVoices();
+      const italianVoices = voices.filter(v => v.lang.startsWith('it'));
+
+      selectedVoice = 
+        italianVoices.find(v => v.name.includes('Elsa')) ||
+        italianVoices.find(v => v.name.includes('Cosimo')) ||
+        italianVoices.find(v => v.name.includes('Alice')) ||
+        italianVoices.find(v => v.name.includes('Federica')) ||
+        italianVoices.find(v => v.name.includes('Google italiano')) ||
+        italianVoices.find(v => v.name.toLowerCase().includes('female')) ||
+        italianVoices[0] || null;
+    }
+
+    if (typeof speechSynthesis !== 'undefined') {
+      loadVoices();
+      if (speechSynthesis.onvoiceschanged !== undefined) {
+        speechSynthesis.onvoiceschanged = loadVoices;
+      }
+    }
+
+    function speak(text, onCompleteCallback = null) {
+      window.speechSynthesis.cancel();
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.lang = 'it-IT';
+      
+      if (selectedVoice) {
+        utterance.voice = selectedVoice;
+      }
+
+      utterance.rate = 0.85;
+      utterance.pitch = 1.0;
+
+      statusDiv.textContent = text;
+
+      if (onCompleteCallback) {
+        utterance.onend = () => {
+          setTimeout(onCompleteCallback, 300);
+        };
+      }
+
+      window.speechSynthesis.speak(utterance);
+    }
+
+    // Normalizzazione del testo vocale
+    function normalizeTranscript(rawText) {
+      let text = rawText.toLowerCase();
+      // Rimuove la punteggiatura
+      text = text.replace(/[.,\/#!$%\^&\*;:{}=\-_`~()]/g, " ");
+      // Sostituisce le contrazioni e abbreviazioni di "minore"
+      text = text.replace(/\b(min|minor|minori|m)\b/g, "minore");
+      // Normalizza gli spazi multipli
+      return text.replace(/\s+/g, " ").trim();
+    }
+
+    if (SpeechRecognition) {
+      recognition = new SpeechRecognition();
+      recognition.lang = 'it-IT';
+      recognition.continuous = false;
+      recognition.interimResults = false;
+
+      recognition.onresult = (event) => {
+        if (hasResponded) return;
+        hasResponded = true;
+
+        const rawTranscript = event.results[0][0].transcript;
+        const normalized = normalizeTranscript(rawTranscript);
+        let matchFound = false;
+
+        for (let rule of tonalityRules) {
+          for (let key of rule.keys) {
+            if (normalized.includes(key)) {
+              speak(rule.speech);
+              matchFound = true;
+              break;
+            }
+          }
+          if (matchFound) break;
+        }
+
+        if (!matchFound) {
+          speak('Ho capito ' + rawTranscript + ', ma non è una tonalità riconosciuta. Riprova pronunciando ad esempio La minore o Sol maggiore.');
+        }
+      };
+
+      recognition.onerror = () => {
+        if (!hasResponded) {
+          hasResponded = true;
+          speak('Errore di ascolto. Riproviamo.');
+        }
+      };
+
+      recognition.onend = () => {
+        isListening = false;
+      };
+
+      const initiateFlow = () => {
+        if (isListening) return;
+        isListening = true;
+        hasResponded = false;
+
+        speak('In ascolto. Pronuncia la tonalità.', () => {
+          try {
+            recognition.start();
+          } catch (e) {
+            isListening = false;
+          }
+        });
+      };
+
+      micBtn.addEventListener('click', initiateFlow);
+      window.addEventListener('keydown', (e) => {
+        if (e.code === 'Space') { 
+          e.preventDefault(); 
+          initiateFlow(); 
+        }
+      });
+    } else {
+      speak('Il browser non supporta il riconoscimento vocale diretto.');
+    }
+  </script>
+</body>
+</html>
