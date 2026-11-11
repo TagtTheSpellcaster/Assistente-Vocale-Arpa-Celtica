@@ -36,6 +36,27 @@ Il progetto si compone dei seguenti file da inserire nella medesima cartella sul
 * Temporizzazione intelligente anti-sovrapposizione: Il microfono viene attivato esclusivamente al termine del messaggio vocale guida dell'app ("In ascolto..."), evitando che l'altoparlante interferisca con il microfono.
 * Selezione prioritaria delle voci naturali: Il sistema rileva e seleziona automaticamente le voci italiane femminili e naturali disponibili sul sistema operativo (es. Microsoft Elsa su Windows, Alice/Federica su iOS/macOS, o voci ad alta qualità su Android).
 
+## Compatibilità Browser e Piattaforme
+
+Il funzionamento del riconoscimento vocale (Web Speech API) varia in base al motore di trascrizione sottostante utilizzato da ciascun browser e sistema operativo.
+
+### Tabella di Compatibilità
+
+| Piattaforma | Browser Consigliato | Stato | Note e Funzionamento |
+|---|---|---|---|
+| **iOS (iPhone / iPad)** | Safari | **Piena** | Sfrutta l'engine nativo Apple (Siri). Riconosce perfettamente la lingua italiana, i modi minori e le alterazioni (*Fa diesis minore*). **Piattaforma di riferimento per la PWA.** |
+| **Android** | Chrome / Brave / APK | **Piena** | Utilizza *Google Speech Services* di sistema. Elabora la dizione italiana locale senza troncare le parole composte. |
+| **macOS** | Safari | **Piena** | Utilizza il motore di dettatura nativo di macOS. |
+| **Windows / macOS** | Chrome / Edge | **Parziale** | Invia l'audio ai server Cloud di Google. Il post-processing in italiano tende a scartare o convertire erratamente i termini musicali isolati (es. *"minore"* o *"bemolle"*). |
+| **Qualsiasi OS** | Brave (Desktop) | **Non supportato** | L'API `SpeechRecognition` è disabilitata nativamente dal browser per politiche di privacy. |
+| **Qualsiasi OS** | Firefox (Desktop) | **Non supportato** | L'API `SpeechRecognition` non è abilitata di default nei sorgenti del browser. |
+
+### Dettagli Tecnici sui Motori Vocali
+
+* **Engine Nativo Apple (Safari su iOS/macOS):** L'elaborazione audio avviene a livello di sistema operativo ed è ottimizzata per la dizione naturale e i termini compositi italiani. È l'ambiente ideale per l'uso a mani libere da parte di utenti ipovedenti o non vedenti tramite **VoiceOver**.
+* **Engine Nativo Android (Chrome/Brave su Android):** Sia il browser che l'APK installato si appoggiano ai servizi vocali integrati del dispositivo, garantendo la corretta normalizzazione dei comandi vocali.
+* **Engine Cloud Google (Chrome/Edge su Desktop):** L'audio viene inviato ai server web di Google, il cui filtro linguistico per il desktop rischia di scambiare aggettivi musicali come *"minore"* per punteggiatura o rumore di fondo.
+
 ## Come Installare e Usare
 
 ### Requisiti di Sistema
